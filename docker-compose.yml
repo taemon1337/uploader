@@ -1,0 +1,34 @@
+version: "2"
+networks:
+  working:
+    external: true
+services:
+  api:
+    build: ./api
+    volumes:
+      - ./api:/api
+    working_dir: /api
+    command: python -u run.py
+    networks:
+      - working
+    depends_on:
+      - mongo
+  app:
+    build: ./app
+    volumes:
+      - ./app:/app
+      - ../common:/common
+    working_dir: /app
+    command: node run.js
+    networks:
+      - working
+    ports:
+      - 8080:8080
+    depends_on:
+      - api
+  mongo:
+    image: mongo
+    volumes:
+      - ./data/mongo:/data/db
+    networks:
+      - working
