@@ -36,13 +36,11 @@ Uploader.prototype = {
     var len = self.fileHandlers.length
 
     var handle = function(i) {
-      console.log("FILE HANDLER: ", i)
       var next = function() { handle(i+1) }
 
       if(i < len) {
         self.fileHandlers[i](file, uuid, next, failure, self);
       } else {
-        console.log("FILE HANDLERS DONE")
         success()
       }
     }
@@ -80,9 +78,11 @@ Uploader.prototype = {
     var self = this;
     var uuid = fields.qquuid;
     var responseData = { success: false };
+    var hasFailed = false;
     var failure = function() {
       responseData.error = "Problem copying the file!"
       res.send(responseData)
+      hasFailed = true
     }
 
     file.name = fields.qqfilename;
@@ -91,9 +91,11 @@ Uploader.prototype = {
       console.log("UPLOAD: ", file.name, uuid);
       self.moveUploadedFile(file, uuid, function(destinationPath) {
         file.path = destinationPath; // moved to this path
-        responseData.success = true
         self.handleUploadedFile(file, uuid, function() {
-          res.send(responseData)
+          if(!hasFailed) {
+            responseData.success = true
+            res.send(responseData)
+          }
         }, failure);
       }, failure);
     } else {

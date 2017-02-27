@@ -4,30 +4,41 @@ var fs = require('fs')
   , API = process.env.API || "http://api:8080/api"
 ;
 
-module.exports = function(file, uuid, success, failure, uploader) {
-  var infofile = file.path+".json";
-  var json = {}
-  if(fs.existsSync(infofile)) {
-    fs.readFile(infofile,'utf8', function(err, data) {
-      if(err) throw err;
-      json = JSON.parse(data)
-    })
-  }
-
-  json.filename = file.name
-  json.content_type = file.type || ""
-  json.file = fs.createReadStream(file.path)
-
+var uploadForm = function(url, data, success, failure) {
   Promise.try(function() {
-    console.log("SENDING TO API...", file.path);
-    return bhttp.post(API+"/documents", json, { forceMultipart: true })
-  })
-  .then(function(resp) {
-    console.log("EVE RESPONSE: ", resp);
-    success()
-  })
-  .catch(function(err) {
-    console.log("EVE ERR: ", err);
+    return bhttp.post(url, data, { forceMultipart: true })
+  }).then(function(resp) {
+    if(resp.statusCode > 399) {
+      console.log(resp.statusMessage, resp.body)
+      failure()
+    } else {
+      console.log("SUCCESS: ", resp.body)
+      success()
+    }
+  }).catch(function(err) {
+    console.log("FAILURE: ", err)
     failure()
-  })
+  });
+}
+
+module.exports = function(file, uuid, success, failure, uploader) {
+  try {
+    var infofile = file.path+".json";
+    var json = {}
+    if(fs.existsSync(infofile)) {
+      fs.readFile(infofile,'utf8', function(err, data) {
+        if(err) throw err;
+        json = JSON.parse(data)
+      })
+    }
+
+    json.filename = file.name[0].toString()
+    json.content_type = file.content_type || "?"
+    json.file = fs.createReadStream(file.path)
+
+    uploadForm(API+"/documents", json, success, failure);
+  } catch(err) {
+    console.warn("Err: ", err);
+    failure()
+  }
 }
