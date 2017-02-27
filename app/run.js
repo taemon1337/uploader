@@ -9,6 +9,8 @@ var express = require("express")
   , API = process.env.API || "http://api:8080"
 ;
 
+uploader.addFileHandler(require('./lib/info-handler'))
+uploader.addFileHandler(require('./lib/hash-handler'))
 uploader.addFileHandler(require('./lib/eve-uploader'))
 
 app.use(express.static(publicDir));

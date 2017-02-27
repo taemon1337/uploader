@@ -25,13 +25,12 @@ Uploader.prototype = {
     var self = this;
     app.post("/uploads", function(req, res) { return self.onUpload(req, res) });
     app.delete("/uploads/:uuid", function(req, res) { return self.onDeleteFile(req, res) });
-    app.post("/uploads/:uuid/info", function(req, res) { return self.onUploadInfo(req, res) });
 //app.post("/upload-complete", function(req, res) { return self.onChunkedUploadComplete(req, res) });
   },
   addFileHandler: function(fileHandler) {
     this.fileHandlers.push(fileHandler);
   },
-  handleUploadedFile: function(file, uuid, success, failure) {
+  handleUploadedFile: function(file, uuid, fields, success, failure) {
     var self = this;
     var len = self.fileHandlers.length
 
@@ -39,7 +38,7 @@ Uploader.prototype = {
       var next = function() { handle(i+1) }
 
       if(i < len) {
-        self.fileHandlers[i](file, uuid, next, failure, self);
+        self.fileHandlers[i](file, uuid, fields, next, failure, self);
       } else {
         success()
       }
@@ -80,9 +79,9 @@ Uploader.prototype = {
     var responseData = { success: false };
     var hasFailed = false;
     var failure = function() {
+      hasFailed = true
       responseData.error = "Problem copying the file!"
       res.send(responseData)
-      hasFailed = true
     }
 
     file.name = fields.qqfilename;
@@ -91,7 +90,7 @@ Uploader.prototype = {
       console.log("UPLOAD: ", file.name, uuid);
       self.moveUploadedFile(file, uuid, function(destinationPath) {
         file.path = destinationPath; // moved to this path
-        self.handleUploadedFile(file, uuid, function() {
+        self.handleUploadedFile(file, uuid, fields, function() {
           if(!hasFailed) {
             responseData.success = true
             res.send(responseData)
@@ -111,6 +110,12 @@ Uploader.prototype = {
         responseData = {
             success: false
         };
+    var hasFailed = false;
+    var failure = function() {
+      responseData.error = "Problem combining the chunks!"
+      res.send(responseData)
+      hasFailed = true
+    }
 
     file.name = fields.qqfilename;
 
@@ -124,13 +129,13 @@ Uploader.prototype = {
         else {
           self.combineChunks(file.name, uuid, function() {
             console.log("UPLOAD: ", file.name, uuid);
-            responseData.success = true;
-            res.send(responseData);
-          },
-          function() {
-            responseData.error = "Problem conbining the chunks!";
-            res.send(responseData);
-          });
+            self.handleUploadedFile(file, uuid, fields, function() {
+              if(!hasFailed) {
+                responseData.success = true
+                res.send(responseData)
+              }
+            }, failure);
+          }, failure);
         }
       },
       function(reset) {
@@ -141,22 +146,6 @@ Uploader.prototype = {
     else {
       self.failWithTooBigFile(responseData, res);
     }
-  },
-  onUploadInfo: function(req, res) {
-    var self = this;
-    self.parseForm(req, function(err, fields, files) {
-      res.set("Content-Type", "text/plain");
-
-      var uuid = req.params.uuid,
-          dir = self.uploadPath + uuid;
-
-      if(fields && fields.filename) {
-        fs.writeFile(dir+"/"+fields.filename+".json", JSON.stringify(fields,null,2));
-        res.send({ success: true });
-      } else {
-        res.send({ success: false, error: "No fields or filename" })
-      }
-    })
   },
   onChunkedUploadComplete: function(req, res) {
     var self = this;

@@ -21,7 +21,7 @@ var uploadForm = function(url, data, success, failure) {
   });
 }
 
-module.exports = function(file, uuid, success, failure, uploader) {
+module.exports = function(file, uuid, fields, success, failure, uploader) {
   try {
     var infofile = file.path+".json";
     var json = {}

@@ -1,4 +1,4 @@
-module.exports = function(file, uuid, success, failure, uploader) {
+module.exports = function(file, uuid, fields, success, failure, uploader) {
   var destinationDir = uploader.uploadPath + uuid + "/",
       fileDestination = destinationDir + file.name;
 
