@@ -1,13 +1,14 @@
 FROM node
 
-RUN npm install express request bhttp bluebird
-RUN npm install rimraf mkdirp multiparty
-RUN npm install fine-uploader
+RUN npm install express request bhttp bluebird yazl archiver rimraf mkdirp multiparty fine-uploader
 
-COPY ./ /work
-WORKDIR /work
+COPY ./ /web
 
-EXPOSE 8080
-ENV PORT=8080
+WORKDIR /web
 
-CMD node run.js
+ENV INBOX_DATA=/inbox_data/ \
+    PORT=8080
+
+VOLUME $INBOX_DATA
+
+CMD node run.js $INBOX_DATA

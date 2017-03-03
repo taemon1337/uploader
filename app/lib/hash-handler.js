@@ -3,7 +3,7 @@ var fs = require('fs')
 ;
 
 module.exports = function(file, uuid, fields, success, failure, uploader) {
-  var infofile = uploader.uploadPath+uuid+"/"+file.name+".json"
+  var infofile = uploader.getFileInfoPath(file, uuid);
   if(fs.existsSync(infofile)) {
     fs.readFile(infofile,'utf8', function(err, data) {
       if(err) throw err;

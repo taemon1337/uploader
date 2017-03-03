@@ -4,19 +4,19 @@ var cleanValue = function(val) {
   return typeof val === "object" && val.length ? val.join(',') : val
 }
 
-var cleanFields = function(fields) {
-  var cleaned = {}
+var parseFileFields = function(file,fields) {
+  var parsed = { filename: file.name, size: file.size, datetime: new Date() };
   for(var key in fields) {
     if(!key.startsWith("qq")) {
-      cleaned[key] = cleanValue(fields[key])
+      parsed[key] = cleanValue(fields[key])
     }
   }
-  return cleaned;
+  return parsed;
 }
 
 module.exports = function(file, uuid, fields, success, failure, uploader) {
-  var infofile = uploader.uploadPath+uuid+"/"+file.name+".json";
-  fs.writeFile(infofile, JSON.stringify(cleanFields(fields),null,2), function(err) {
+  var infofile = uploader.getFileInfoPath(file, uuid);
+  fs.writeFile(infofile, JSON.stringify(parseFileFields(file,fields),null,2), function(err) {
     if(err) {
       console.log("Error writing info file", err)
       failure()
